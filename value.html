@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AfterLogs — Asset Valuator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #070d1a;
+    --navy-mid: #0d1829;
+    --navy-light: #112038;
+    --navy-border: #1a2d4a;
+    --cyan: #00d4ff;
+    --cyan-dim: #0099bb;
+    --cyan-glow: rgba(0,212,255,0.12);
+    --cyan-glow-strong: rgba(0,212,255,0.22);
+    --green: #00e5a0;
+    --amber: #ffb347;
+    --red: #ff5f6d;
+    --text-primary: #e8f4ff;
+    --text-secondary: #7a9bbf;
+    --text-muted: #3d5a7a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(0,212,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 40px;
+    border-bottom: 1px solid var(--navy-border);
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 28px;
+  }
+
+  .logo-bar {
+    width: 5px;
+    background: var(--cyan);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: barPulse 2s ease-in-out infinite;
+  }
+  .logo-bar:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .logo-bar:nth-child(2) { height: 65%; animation-delay: 0.15s; }
+  .logo-bar:nth-child(3) { height: 90%; animation-delay: 0.3s; }
+  .logo-bar:nth-child(4) { height: 55%; animation-delay: 0.45s; }
+
+  .logo-arrow {
+    color: var(--cyan);
+    font-size: 18px;
+    margin-left: 2px;
+    text-shadow: 0 0 10px var(--cyan);
+  }
+
+  @keyframes barPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .logo-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .logo-name span { color: var(--cyan); }
+
+  .header-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    border: 1px solid var(--cyan-dim);
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--cyan-glow);
+    letter-spacing: 0.08em;
+  }
+
+  /* Page title */
+  .page-title {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .page-title h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .page-title h1 em {
+    font-style: normal;
+    color: var(--cyan);
+    text-shadow: 0 0 30px rgba(0,212,255,0.4);
+  }
+
+  .page-title p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Asset type tabs */
+  .asset-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--navy-border);
+    background: var(--navy-mid);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    border-color: var(--cyan-dim);
+    color: var(--text-primary);
+  }
+
+  .tab-btn.active {
+    background: var(--cyan-glow);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 16px var(--cyan-glow);
+  }
+
+  /* Main grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  @media (max-width: 640px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+
+  .panel:hover { border-color: rgba(0,212,255,0.2); }
+
+  .panel.full-width { grid-column: 1 / -1; }
+
+  .panel-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--navy-border);
+  }
+
+  /* Form elements */
+  .field {
+    margin-bottom: 18px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 7px;
+    font-weight: 500;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    background: var(--navy-light);
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    appearance: none;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: var(--cyan-dim);
+    box-shadow: 0 0 0 3px var(--cyan-glow);
+  }
+
+  .field select option { background: var(--navy-mid); }
+
+  .input-prefix {
+    position: relative;
+  }
+
+  .input-prefix span {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .input-prefix input { padding-left: 28px; }
+
+  /* Slider */
+  .slider-field label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .slider-field label span {
+    font-family: 'DM Mono', monospace;
+    color: var(--cyan);
+    font-size: 13px;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    background: var(--navy-border);
+    border-radius: 2px;
+    outline: none;
+    margin-bottom: 18px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  /* Calculate button */
+  .calc-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-dim) 100%);
+    color: var(--navy);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 24px rgba(0,212,255,0.25);
+    margin-top: 4px;
+  }
+
+  .calc-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,212,255,0.4);
+  }
+
+  .calc-btn:active { transform: translateY(0); }
+
+  /* Action buttons */
+  .action-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 14px;
+    background: var(--navy-light);
+    border: 1px solid var(--navy-border);
+    color: var(--text-secondary);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    border-color: var(--cyan-dim);
+    color: var(--cyan);
+  }
+
+  .action-btn:active { transform: scale(0.98); }
+  .results-panel {
+    grid-column: 1 / -1;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    padding: 28px;
+    display: none;
+  }
+
+  .results-panel.visible {
+    display: block;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .valuation-hero {
+    text-align: center;
+    padding: 20px 0 32px;
+    border-bottom: 1px solid var(--navy-border);
+    margin-bottom: 28px;
+  }
+
+  .valuation-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .valuation-range {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .val-low, .val-high {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  .val-mid {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 8vw, 52px);
+    font-weight: 800;
+    color: var(--cyan);
+    text-shadow: 0 0 40px rgba(0,212,255,0.5);
+    letter-spacing: -0.03em;
+  }
+
+  .val-sep { color: var(--navy-border); font-size: 28px; }
+
+  .confidence-bar-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .confidence-bar {
+    width: 200px;
+    height: 4px;
+    background: var(--navy-border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  .confidence-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .metric-card {
+    background: var(--navy-light);
+    border: 1px solid var(--navy-border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+    opacity: 0.5;
+  }
+
+  .metric-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .metric-value.positive { color: var(--green); }
+  .metric-value.warning { color: var(--amber); }
+  .metric-value.negative { color: var(--red); }
+
+  .metric-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* Score bars */
+  .score-section { margin-bottom: 24px; }
+
+  .score-section h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .score-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    width: 130px;
+    flex-shrink: 0;
+  }
+
+  .score-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--navy-light);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease;
+  }
+
+  .score-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    width: 32px;
+    text-align: right;
+  }
+
+  /* Recommendation box */
+  .recommendation {
+    background: var(--navy-light);
+    border: 1px solid var(--navy-border);
+    border-left: 3px solid var(--cyan);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+  }
+
+  .recommendation h4 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+
+  .recommendation p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* Footer note */
+  .footer-note {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background: var(--navy-border);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 14px;
+    font-size: 9px;
+    color: var(--text-muted);
+    cursor: help;
+    margin-left: 5px;
+    position: relative;
+    vertical-align: middle;
+  }
+
+  .tag-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+    letter-spacing: 0.05em;
+  }
+
+  .tag.green { border-color: var(--green); color: var(--green); background: rgba(0,229,160,0.07); }
+  .tag.amber { border-color: var(--amber); color: var(--amber); background: rgba(255,179,71,0.07); }
+  .tag.red   { border-color: var(--red); color: var(--red); background: rgba(255,95,109,0.07); }
+  .tag.cyan  { border-color: var(--cyan-dim); color: var(--cyan); background: var(--cyan-glow); }
+
+  .shareBtn {
+    font-size: 11px;
+    flex: 0 1 auto;
+  }
+
+  /* Analytics panel */
+  .analytics-panel {
+    grid-column: 1 / -1;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 32px;
+    display: none;
+  }
+
+  .analytics-panel.visible { display: block; }
+
+  .analytics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  .analytics-header h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .analytics-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+  }
+
+  .analytics-stat {
+    background: var(--navy-light);
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .analytics-stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .analytics-stat-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <div class="logo-bar"></div>
+        <div class="logo-bar"></div>
+        <div class="logo-bar"></div>
+        <div class="logo-bar"></div>
+        <span class="logo-arrow">›</span>
+      </div>
+      <span class="logo-name">After<span>Logs</span></span>
+    </div>
+    <div class="header-badge">ASSET VALUATOR v1.0</div>
+  </header>
+
+  <div class="page-title">
+    <h1>Digital Asset <em>Valuation</em> Tool</h1>
+    <p>Get an instant market estimate for websites, social accounts, AdSense, and more.</p>
+  </div>
+
+  <!-- Asset Type Tabs -->
+  <div class="asset-tabs">
+    <button class="tab-btn active" onclick="setTab(this, 'website')">🌐 Website / Blog</button>
+    <button class="tab-btn" onclick="setTab(this, 'social')">📱 Social Account</button>
+    <button class="tab-btn" onclick="setTab(this, 'adsense')">💰 AdSense Account</button>
+    <button class="tab-btn" onclick="setTab(this, 'ecom')">🛒 eCommerce Store</button>
+  </div>
+
+  <!-- Input Panels -->
+  <div class="main-grid" id="formArea">
+
+    <!-- Left panel: Core metrics -->
+    <div class="panel">
+      <div class="panel-label">Core Metrics</div>
+
+      <div class="field" id="f-monthlyRevenue">
+        <label>Monthly Revenue (USD)</label>
+        <div class="input-prefix">
+          <span>$</span>
+          <input type="number" id="monthlyRevenue" placeholder="0" min="0">
+        </div>
+      </div>
+
+      <div class="field" id="f-monthlyTraffic">
+        <label>Monthly Visitors / Views</label>
+        <input type="number" id="monthlyTraffic" placeholder="e.g. 25000" min="0">
+      </div>
+
+      <div class="field" id="f-age">
+        <label>Asset Age (months)</label>
+        <input type="number" id="assetAge" placeholder="e.g. 18" min="1">
+      </div>
+
+      <div class="field" id="f-niche">
+        <label>Niche / Category</label>
+        <select id="niche">
+          <option value="">— Select niche —</option>
+          <option value="finance">Finance / Investing</option>
+          <option value="tech">Technology / SaaS</option>
+          <option value="health">Health & Wellness</option>
+          <option value="entertainment">Entertainment / Celebrity</option>
+          <option value="ecom">eCommerce / Retail</option>
+          <option value="education">Education / Online Courses</option>
+          <option value="marketing">Marketing / SEO / Blogging</option>
+          <option value="travel">Travel / Lifestyle</option>
+          <option value="gaming">Gaming</option>
+          <option value="crypto">Crypto / Blockchain</option>
+          <option value="saas">SaaS / Software</option>
+          <option value="media">News / Media</option>
+          <option value="productivity">Productivity / Tools</option>
+          <option value="beauty">Beauty / Fashion</option>
+          <option value="fitness">Fitness / Sports</option>
+          <option value="real-estate">Real Estate</option>
+          <option value="automotive">Automotive</option>
+          <option value="food">Food & Beverage</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Custom Base Multiplier Adjustment</label>
+        <div class="input-prefix">
+          <span>×</span>
+          <input type="number" id="customMultiplier" placeholder="1.0" step="0.1" min="0.5" max="2.5" value="1.0">
+        </div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">1.0 = standard, &lt;1.0 = discount, &gt;1.0 = premium</div>
+      </div>
+    </div>
+
+    <!-- Right panel: Quality signals -->
+    <div class="panel">
+      <div class="panel-label">Quality Signals</div>
+
+      <div class="slider-field">
+        <label>Traffic Growth Trend <span id="growthLabel">Stable</span></label>
+        <input type="range" id="growthTrend" min="0" max="4" value="2"
+          oninput="updateSliderLabel('growthTrend','growthLabel',['Declining Fast','Declining','Stable','Growing','Growing Fast'])">
+      </div>
+
+      <div class="slider-field">
+        <label>Revenue Consistency <span id="consistencyLabel">Moderate</span></label>
+        <input type="range" id="revConsistency" min="0" max="4" value="2"
+          oninput="updateSliderLabel('revConsistency','consistencyLabel',['Very Erratic','Erratic','Moderate','Consistent','Very Consistent'])">
+      </div>
+
+      <div class="slider-field">
+        <label>Traffic Source Diversity <span id="diversityLabel">Mixed</span></label>
+        <input type="range" id="trafficDiversity" min="0" max="4" value="2"
+          oninput="updateSliderLabel('trafficDiversity','diversityLabel',['1 Source','Mostly 1 Source','Mixed','Diversified','Fully Diversified'])">
+      </div>
+
+      <div class="field">
+        <label>Monetization Model</label>
+        <select id="monetization">
+          <option value="ads">Display Ads (AdSense, etc.)</option>
+          <option value="affiliate">Affiliate Marketing</option>
+          <option value="subscription">Subscription / SaaS</option>
+          <option value="ecom">eCommerce Sales</option>
+          <option value="sponsorship">Sponsorships / Brand Deals</option>
+          <option value="mixed">Multiple / Mixed</option>
+          <option value="none">Not Monetized Yet</option>
+        </select>
+      </div>
+
+      <button class="calc-btn" onclick="calculate()">⚡ Calculate Valuation</button>
+
+      <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+        <button class="action-btn" onclick="saveInputs()">💾 Save Inputs</button>
+        <button class="action-btn" onclick="clearInputs()">🗑 Clear All</button>
+      </div>
+
+    <!-- Results panel (hidden until calculated) -->
+    <div class="results-panel" id="resultsPanel">
+
+      <div class="valuation-hero">
+        <div class="valuation-label">Estimated Market Value</div>
+        <div class="valuation-range">
+          <span class="val-low" id="valLow">—</span>
+          <span class="val-sep">–</span>
+          <span class="val-mid" id="valMid">$0</span>
+          <span class="val-sep">–</span>
+          <span class="val-high" id="valHigh">—</span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceFill" style="width:0%"></div>
+          </div>
+          <span class="confidence-text" id="confidenceText">Confidence: —</span>
+        </div>
+      </div>
+
+      <!-- Key metrics row -->
+      <div class="metrics-grid" id="metricsGrid"></div>
+
+      <!-- Score breakdown -->
+      <div class="score-section">
+        <h3>Valuation Score Breakdown</h3>
+        <div id="scoreBars"></div>
+      </div>
+
+      <!-- Tags -->
+      <div class="tag-row" id="tagRow"></div>
+
+      <!-- Recommendation -->
+      <div class="recommendation" style="margin-top:20px">
+        <h4>AfterLogs Insight</h4>
+        <p id="recommendationText"></p>
+      </div>
+
+      <!-- Results Actions -->
+      <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; border-top: 1px solid var(--navy-border); padding-top: 24px;">
+        <button class="action-btn" onclick="exportAsCSV()">📥 Export as CSV</button>
+        <button class="action-btn" onclick="downloadReport()">📄 Download Report</button>
+        <button class="action-btn shareBtn" onclick="shareTwitter()" title="Share on Twitter">𝕏 Tweet</button>
+        <button class="action-btn shareBtn" onclick="shareFacebook()" title="Share on Facebook">f Share</button>
+        <button class="action-btn shareBtn" onclick="shareLinkedIn()" title="Share on LinkedIn">in Share</button>
+      </div>
+
+    </div>
+
+  <!-- Analytics Panel -->
+  <div class="analytics-panel" id="analyticsPanel">
+    <div class="analytics-header">
+      <h3>📊 Your A/B Test Analytics</h3>
+      <button class="action-btn" onclick="clearAnalytics()" style="font-size: 10px; padding: 6px 10px;">Reset</button>
+    </div>
+    <div class="analytics-stats" id="analyticsStats"></div>
+  </div>
+
+  <div class="footer-note">
+    Estimates are based on industry multipliers and market benchmarks. Not financial advice.<br>
+    Built for <strong>AfterLogs.com</strong> — the digital asset marketplace.
+  </div>
+
+</div>
+
+<script>
+let currentTab = 'website';
+
+function setTab(btn, tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = tab;
+  document.getElementById('resultsPanel').classList.remove('visible');
+}
+
+function updateSliderLabel(sliderId, labelId, labels) {
+  const val = parseInt(document.getElementById(sliderId).value);
+  document.getElementById(labelId).textContent = labels[val];
+}
+
+function fmt(n) {
+  if (n >= 1000000) return '$' + (n / 1000000).toFixed(2) + 'M';
+  if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function calculate() {
+  const revenue = parseFloat(document.getElementById('monthlyRevenue').value) || 0;
+  const traffic = parseFloat(document.getElementById('monthlyTraffic').value) || 0;
+  const age = parseFloat(document.getElementById('assetAge').value) || 1;
+  const niche = document.getElementById('niche').value || 'other';
+  const growth = parseInt(document.getElementById('growthTrend').value);
+  const consistency = parseInt(document.getElementById('revConsistency').value);
+  const diversity = parseInt(document.getElementById('trafficDiversity').value);
+  const monetization = document.getElementById('monetization').value;
+  const customMult = parseFloat(document.getElementById('customMultiplier').value) || 1.0;
+
+  // Base multiplier by type
+  const typeMultipliers = {
+    website: 30, social: 12, adsense: 25, ecom: 35
+  };
+  let baseMulti = typeMultipliers[currentTab] || 30;
+
+  // Niche multiplier
+  const nicheBonus = {
+    finance: 1.4, tech: 1.35, health: 1.2, education: 1.25,
+    marketing: 1.15, entertainment: 1.0, ecom: 1.1, travel: 0.95,
+    gaming: 1.05, crypto: 1.3, saas: 1.4, media: 1.1, 
+    productivity: 1.25, beauty: 1.15, fitness: 1.1,
+    'real-estate': 1.2, automotive: 1.05, food: 1.08, other: 1.0
+  };
+  baseMulti *= (nicheBonus[niche] || 1.0);
+
+  // Quality multipliers
+  const growthMult  = [0.7, 0.85, 1.0, 1.2, 1.45][growth];
+  const consistMult = [0.75, 0.9, 1.0, 1.15, 1.3][consistency];
+  const diversMult  = [0.8, 0.9, 1.0, 1.1, 1.2][diversity];
+
+  // Monetization bonus
+  const monBonus = {
+    subscription: 1.4, ecom: 1.3, affiliate: 1.1, mixed: 1.2,
+    ads: 1.0, sponsorship: 1.05, none: 0.4
+  };
+  baseMulti *= (monBonus[monetization] || 1.0);
+
+  // Apply custom multiplier
+  baseMulti *= customMult;
+
+  // Age factor (older = more stable)
+  const ageFactor = Math.min(1 + (age / 60) * 0.3, 1.3);
+
+  // Traffic value (CPM-based fallback if no revenue)
+  const trafficVal = traffic * 0.003; // ~$3 CPM fallback
+
+  // Base value
+  let mainRevenue = revenue > 0 ? revenue : trafficVal;
+  let midVal = mainRevenue * baseMulti * growthMult * consistMult * diversMult * ageFactor;
+
+  const lowVal = midVal * 0.72;
+  const highVal = midVal * 1.35;
+
+  // Confidence score
+  let confidence = 40;
+  if (revenue > 0) confidence += 25;
+  if (traffic > 0) confidence += 15;
+  if (age > 6) confidence += 10;
+  if (niche !== '' && niche !== 'other') confidence += 5;
+  if (consistency >= 3) confidence += 5;
+  confidence = Math.min(confidence, 94);
+
+  // Score breakdown
+  const scores = {
+    'Revenue Quality':    Math.round(((revenue > 0 ? 1 : 0.2) * consistMult) * 85),
+    'Traffic Value':      Math.round((Math.min(traffic / 10000, 1) * diversMult) * 90),
+    'Growth Potential':   Math.round(growthMult * 68),
+    'Niche Premium':      Math.round((nicheBonus[niche] || 1) * 65),
+    'Asset Maturity':     Math.round(ageFactor * 72),
+  };
+
+  // Tags
+  const tags = [];
+  if (growth >= 3) tags.push({label:'📈 Growing', cls:'green'});
+  if (growth <= 1) tags.push({label:'📉 Declining', cls:'red'});
+  if (consistency >= 3) tags.push({label:'✅ Stable Revenue', cls:'green'});
+  if (monetization === 'subscription') tags.push({label:'🔒 Recurring Revenue', cls:'cyan'});
+  if (niche === 'finance' || niche === 'tech' || niche === 'crypto' || niche === 'saas') tags.push({label:'💎 Premium Niche', cls:'cyan'});
+  if (age >= 24) tags.push({label:'🕰 Established', cls:'green'});
+  if (revenue === 0) tags.push({label:'⚠ No Revenue', cls:'amber'});
+  if (diversity <= 1) tags.push({label:'⚠ Traffic Risk', cls:'amber'});
+  if (customMult > 1.1) tags.push({label:'🎯 Premium Rated', cls:'green'});
+  if (customMult < 0.9) tags.push({label:'📍 Discounted', cls:'amber'});
+
+  // Recommendation
+  let rec = '';
+  if (revenue === 0 && traffic > 5000) {
+    rec = `This asset has untapped monetization potential. With ${traffic.toLocaleString()} monthly visitors, adding display ads or affiliate links could unlock significant monthly revenue and push valuations considerably higher before listing on AfterLogs.`;
+  } else if (growth >= 3 && consistency >= 3) {
+    rec = `Strong growth + consistent revenue is the ideal seller profile. List this on AfterLogs now — buyers pay premium multiples (up to ${Math.round(baseMulti * 1.4)}x) for assets trending upward. Don't wait for growth to plateau.`;
+  } else if (growth <= 1) {
+    rec = `Declining assets sell at heavy discounts. Consider pausing the sale, optimizing traffic sources, and re-listing in 3–6 months after stabilizing the trend. Buyers will be skeptical without a recovery story.`;
+  } else if (monetization === 'none') {
+    rec = `Unmonetized assets are difficult to price. Even basic AdSense integration for 60 days creates a revenue history that can 3–5x your listing price. Monetize first, sell second.`;
+  } else {
+    rec = `This asset sits in the middle market. To maximize your AfterLogs listing price, focus on diversifying traffic sources and documenting revenue history clearly with screenshots. Transparency drives buyer confidence and higher bids.`;
+  }
+
+  // Render
+  document.getElementById('valMid').textContent = fmt(midVal);
+  document.getElementById('valLow').textContent = fmt(lowVal);
+  document.getElementById('valHigh').textContent = fmt(highVal);
+
+  setTimeout(() => {
+    document.getElementById('confidenceFill').style.width = confidence + '%';
+  }, 100);
+  document.getElementById('confidenceText').textContent = `Confidence: ${confidence}%`;
+
+  // Metrics
+  const annualRev = mainRevenue * 12;
+  const roiMulti = midVal > 0 && annualRev > 0 ? (midVal / annualRev).toFixed(1) + 'x' : '—';
+  const metricsHTML = [
+    { name: 'Revenue Multiple', val: roiMulti, cls: '', sub: 'of annual revenue' },
+    { name: 'Annual Revenue', val: fmt(annualRev), cls: 'positive', sub: 'estimated' },
+    { name: 'Traffic / Month', val: traffic > 0 ? traffic.toLocaleString() : '—', cls: '', sub: 'visitors' },
+    { name: 'Asset Age', val: age + ' mo', cls: age >= 12 ? 'positive' : 'warning', sub: age >= 12 ? 'established' : 'newer asset' },
+  ].map(m => `
+    <div class="metric-card">
+      <div class="metric-name">${m.name}</div>
+      <div class="metric-value ${m.cls}">${m.val}</div>
+      <div class="metric-sub">${m.sub}</div>
+    </div>
+  `).join('');
+  document.getElementById('metricsGrid').innerHTML = metricsHTML;
+
+  // Score bars
+  const colors = ['#00d4ff','#00e5a0','#ffb347','#a78bfa','#00d4ff'];
+  const scoreBarsHTML = Object.entries(scores).map(([name, score], i) => `
+    <div class="score-row">
+      <span class="score-name">${name}</span>
+      <div class="score-bar-bg">
+        <div class="score-bar-fill" style="width:0%;background:${colors[i]};border-radius:3px" 
+             id="sbar${i}" data-target="${Math.min(score, 100)}"></div>
+      </div>
+      <span class="score-num">${Math.min(score,100)}</span>
+    </div>
+  `).join('');
+  document.getElementById('scoreBars').innerHTML = scoreBarsHTML;
+
+  setTimeout(() => {
+    document.querySelectorAll('[id^="sbar"]').forEach(el => {
+      el.style.transition = 'width 0.8s ease';
+      el.style.width = el.dataset.target + '%';
+    });
+  }, 100);
+
+  // Tags
+  document.getElementById('tagRow').innerHTML = tags.map(t =>
+    `<span class="tag ${t.cls}">${t.label}</span>`
+  ).join('');
+
+  document.getElementById('recommendationText').textContent = rec;
+
+  document.getElementById('resultsPanel').classList.add('visible');
+  document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Track analytics
+  trackCalculation(currentTab, niche, fmt(midVal));
+}
+
+// ===== DATA PERSISTENCE =====
+function saveInputs() {
+  const data = {
+    revenue: document.getElementById('monthlyRevenue').value,
+    traffic: document.getElementById('monthlyTraffic').value,
+    age: document.getElementById('assetAge').value,
+    niche: document.getElementById('niche').value,
+    growth: document.getElementById('growthTrend').value,
+    consistency: document.getElementById('revConsistency').value,
+    diversity: document.getElementById('trafficDiversity').value,
+    monetization: document.getElementById('monetization').value,
+    multiplier: document.getElementById('customMultiplier').value,
+    saved: new Date().toLocaleString()
+  };
+  localStorage.setItem('valuatorInputs', JSON.stringify(data));
+  alert('✅ Inputs saved! Reload the page and they\'ll auto-load.');
+}
+
+function loadInputs() {
+  const saved = localStorage.getItem('valuatorInputs');
+  if (!saved) return;
+  const data = JSON.parse(saved);
+  document.getElementById('monthlyRevenue').value = data.revenue || '';
+  document.getElementById('monthlyTraffic').value = data.traffic || '';
+  document.getElementById('assetAge').value = data.age || '';
+  document.getElementById('niche').value = data.niche || '';
+  document.getElementById('growthTrend').value = data.growth || '2';
+  document.getElementById('revConsistency').value = data.consistency || '2';
+  document.getElementById('trafficDiversity').value = data.diversity || '2';
+  document.getElementById('monetization').value = data.monetization || 'ads';
+  document.getElementById('customMultiplier').value = data.multiplier || '1.0';
+  // Update labels
+  updateSliderLabel('growthTrend','growthLabel',['Declining Fast','Declining','Stable','Growing','Growing Fast']);
+  updateSliderLabel('revConsistency','consistencyLabel',['Very Erratic','Erratic','Moderate','Consistent','Very Consistent']);
+  updateSliderLabel('trafficDiversity','diversityLabel',['1 Source','Mostly 1 Source','Mixed','Diversified','Fully Diversified']);
+}
+
+function clearInputs() {
+  if (!confirm('Clear all inputs?')) return;
+  document.getElementById('monthlyRevenue').value = '';
+  document.getElementById('monthlyTraffic').value = '';
+  document.getElementById('assetAge').value = '';
+  document.getElementById('niche').value = '';
+  document.getElementById('growthTrend').value = '2';
+  document.getElementById('revConsistency').value = '2';
+  document.getElementById('trafficDiversity').value = '2';
+  document.getElementById('monetization').value = 'ads';
+  document.getElementById('customMultiplier').value = '1.0';
+  document.getElementById('resultsPanel').classList.remove('visible');
+  updateSliderLabel('growthTrend','growthLabel',['Declining Fast','Declining','Stable','Growing','Growing Fast']);
+  updateSliderLabel('revConsistency','consistencyLabel',['Very Erratic','Erratic','Moderate','Consistent','Very Consistent']);
+  updateSliderLabel('trafficDiversity','diversityLabel',['1 Source','Mostly 1 Source','Mixed','Diversified','Fully Diversified']);
+}
+
+// ===== EXPORT FUNCTIONS =====
+function exportAsCSV() {
+  const data = {
+    'Asset Type': currentTab,
+    'Monthly Revenue': document.getElementById('monthlyRevenue').value || '0',
+    'Monthly Traffic': document.getElementById('monthlyTraffic').value || '0',
+    'Asset Age (months)': document.getElementById('assetAge').value || '0',
+    'Niche': document.getElementById('niche').value || 'N/A',
+    'Growth Trend': document.getElementById('growthTrend').value,
+    'Revenue Consistency': document.getElementById('revConsistency').value,
+    'Traffic Diversity': document.getElementById('trafficDiversity').value,
+    'Monetization': document.getElementById('monetization').value,
+    'Custom Multiplier': document.getElementById('customMultiplier').value,
+    'Estimated Value (Low)': document.getElementById('valLow').textContent || '—',
+    'Estimated Value (Mid)': document.getElementById('valMid').textContent || '—',
+    'Estimated Value (High)': document.getElementById('valHigh').textContent || '—',
+    'Confidence': document.getElementById('confidenceText').textContent || '—',
+    'Generated': new Date().toLocaleString()
+  };
+  
+  const csv = Object.entries(data).map(([k,v]) => `"${k}","${v}"`).join('\n');
+  downloadFile(csv, 'valuation-' + Date.now() + '.csv', 'text/csv');
+}
+
+function downloadReport() {
+  const revenue = document.getElementById('monthlyRevenue').value || '0';
+  const traffic = document.getElementById('monthlyTraffic').value || '0';
+  const age = document.getElementById('assetAge').value || '0';
+  const niche = document.getElementById('niche').value || 'N/A';
+  const mid = document.getElementById('valMid').textContent;
+  const low = document.getElementById('valLow').textContent;
+  const high = document.getElementById('valHigh').textContent;
+  const rec = document.getElementById('recommendationText').textContent;
+  
+  const report = `
+AFTERLOGS DIGITAL ASSET VALUATION REPORT
+Generated: ${new Date().toLocaleString()}
+============================================
+
+ASSET INFORMATION
+Asset Type: ${currentTab}
+Niche: ${niche}
+Asset Age: ${age} months
+Monthly Revenue: $${revenue}
+Monthly Traffic: ${traffic} visitors
+
+VALUATION ESTIMATE
+Estimated Low:  ${low}
+Estimated Mid:  ${mid}
+Estimated High: ${high}
+Confidence: ${document.getElementById('confidenceText').textContent}
+
+AFTERTLOGS INSIGHT
+${rec}
+
+============================================
+This report is provided for informational purposes only.
+Not financial advice. Visit AfterLogs.com for more tools.
+`;
+
+  downloadFile(report, 'valuation-report-' + Date.now() + '.txt', 'text/plain');
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== SHARE FUNCTIONS =====
+function shareTwitter() {
+  const mid = document.getElementById('valMid').textContent;
+  const text = `I just valued my ${currentTab} on AfterLogs and got ${mid}! 🚀 Try the free valuator → `;
+  const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+  window.open(url, '_blank', 'width=600,height=400');
+  trackShare('twitter');
+}
+
+function shareFacebook() {
+  const url = window.location.href;
+  const facebook = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+  window.open(facebook, '_blank', 'width=600,height=400');
+  trackShare('facebook');
+}
+
+function shareLinkedIn() {
+  const mid = document.getElementById('valMid').textContent;
+  const text = `Valued my ${currentTab} using AfterLogs Digital Asset Valuator and got ${mid}!`;
+  const url = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(window.location.href);
+  window.open(url, '_blank', 'width=600,height=400');
+  trackShare('linkedin');
+}
+
+// ===== A/B TESTING & ANALYTICS =====
+function loadAnalytics() {
+  let analytics = JSON.parse(localStorage.getItem('valuatorAnalytics')) || {
+    totalViews: 0,
+    totalCalculations: 0,
+    assetTypeCounts: {},
+    nichePopularity: {},
+    avgValuation: 0,
+    valuationSum: 0,
+    shareCounts: {}
+  };
+  return analytics;
+}
+
+function saveAnalytics(analytics) {
+  localStorage.setItem('valuatorAnalytics', JSON.stringify(analytics));
+}
+
+function trackCalculation(tabType, nicheVal, valMid) {
+  let analytics = loadAnalytics();
+  analytics.totalCalculations++;
+  analytics.assetTypeCounts[tabType] = (analytics.assetTypeCounts[tabType] || 0) + 1;
+  if (nicheVal) analytics.nichePopularity[nicheVal] = (analytics.nichePopularity[nicheVal] || 0) + 1;
+  
+  const midNum = parseFloat(valMid.replace(/[^0-9.-]/g, '')) || 0;
+  analytics.valuationSum += midNum;
+  analytics.avgValuation = (analytics.valuationSum / analytics.totalCalculations).toFixed(0);
+  
+  saveAnalytics(analytics);
+  refreshAnalyticsDisplay();
+}
+
+function trackShare(platform) {
+  let analytics = loadAnalytics();
+  analytics.shareCounts[platform] = (analytics.shareCounts[platform] || 0) + 1;
+  saveAnalytics(analytics);
+  refreshAnalyticsDisplay();
+}
+
+function refreshAnalyticsDisplay() {
+  const analytics = loadAnalytics();
+  if (analytics.totalCalculations === 0) {
+    document.getElementById('analyticsPanel').classList.remove('visible');
+    return;
+  }
+  
+  const topAsset = Object.entries(analytics.assetTypeCounts).sort((a,b) => b[1]-a[1])[0];
+  const topNiche = Object.entries(analytics.nichePopularity).sort((a,b) => b[1]-a[1])[0];
+  const topShare = Object.entries(analytics.shareCounts).sort((a,b) => b[1]-a[1])[0];
+  
+  const statsHTML = `
+    <div class="analytics-stat">
+      <div class="analytics-stat-label">Total Valuations</div>
+      <div class="analytics-stat-value">${analytics.totalCalculations}</div>
+    </div>
+    <div class="analytics-stat">
+      <div class="analytics-stat-label">Avg Valuation</div>
+      <div class="analytics-stat-value">${fmt(parseInt(analytics.avgValuation))}</div>
+    </div>
+    <div class="analytics-stat">
+      <div class="analytics-stat-label">Top Asset Type</div>
+      <div class="analytics-stat-value">${topAsset ? topAsset[0].toUpperCase() : '—'}</div>
+    </div>
+    <div class="analytics-stat">
+      <div class="analytics-stat-label">Most Valued Niche</div>
+      <div class="analytics-stat-value">${topNiche ? topNiche[0].replace(/-/g, ' ') : '—'}</div>
+    </div>
+    <div class="analytics-stat">
+      <div class="analytics-stat-label">Top Share</div>
+      <div class="analytics-stat-value">${topShare ? topShare[0].toUpperCase() : '—'}</div>
+    </div>
+    <div class="analytics-stat">
+      <div class="analytics-stat-label">Total Shares</div>
+      <div class="analytics-stat-value">${Object.values(analytics.shareCounts).reduce((a,b) => a+b, 0)}</div>
+    </div>
+  `;
+  
+  document.getElementById('analyticsStats').innerHTML = statsHTML;
+  document.getElementById('analyticsPanel').classList.add('visible');
+}
+
+function clearAnalytics() {
+  if (!confirm('Clear all analytics data?')) return;
+  localStorage.removeItem('valuatorAnalytics');
+  document.getElementById('analyticsPanel').classList.remove('visible');
+  alert('✅ Analytics cleared.');
+}
+
+// ===== PAGE LOAD =====
+window.addEventListener('load', () => {
+  loadInputs();
+  refreshAnalyticsDisplay();
+  document.getElementById('formArea').addEventListener('change', () => {
+    const multi = parseFloat(document.getElementById('customMultiplier').value) || 1.0;
+    if (multi < 0.5 || multi > 2.5) {
+      document.getElementById('customMultiplier').value = '1.0';
+    }
+  });
+});
+</script>
+</div>
+
+</body>
+</html>
